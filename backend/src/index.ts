@@ -7,6 +7,8 @@ import { env } from './config/env.js';
 import { globalLimiter } from './middleware/rateLimit.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import authRoutes from './modules/auth/auth.routes.js';
+import moviesRoutes from './modules/movies/movies.routes.js';
+import screeningsRoutes from './modules/screenings/screenings.routes.js';
 
 const app = express();
 
@@ -42,7 +44,9 @@ app.get('/api/health', (_req, res) => {
 
 // Moduły API.
 app.use('/api/auth', authRoutes);
-// movies, screenings, reservations zostaną zamontowane w kolejnych krokach.
+app.use('/api/movies', moviesRoutes);
+app.use('/api/screenings', screeningsRoutes);
+// reservations zostanie zamontowany w kolejnym kroku.
 
 // ---- Obsługa błędów (na końcu) ----
 app.use(notFoundHandler);
