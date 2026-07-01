@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser';
 import { env } from './config/env.js';
 import { globalLimiter } from './middleware/rateLimit.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
+import authRoutes from './modules/auth/auth.routes.js';
 
 const app = express();
 
@@ -39,8 +40,9 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Moduły API (auth, movies, screenings, reservations) zostaną zamontowane
-// w kolejnych krokach realizacji.
+// Moduły API.
+app.use('/api/auth', authRoutes);
+// movies, screenings, reservations zostaną zamontowane w kolejnych krokach.
 
 // ---- Obsługa błędów (na końcu) ----
 app.use(notFoundHandler);
