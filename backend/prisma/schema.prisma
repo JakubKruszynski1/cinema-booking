@@ -1,0 +1,74 @@
+// Prisma schema — model danych aplikacji do rezerwacji miejsc w kinie.
+// Dokumentacja: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String        @id @default(cuid())
+  email        String        @unique
+  passwordHash String
+  createdAt    DateTime      @default(now())
+  reservations Reservation[]
+}
+
+model Movie {
+  id          String      @id @default(cuid())
+  title       String
+  description String
+  durationMin Int
+  posterUrl   String?
+  screenings  Screening[]
+}
+
+model Hall {
+  id         String      @id @default(cuid())
+  name       String
+  rows       Int // liczba rzędów
+  cols       Int // miejsc w rzędzie
+  seats      Seat[]
+  screenings Screening[]
+}
+
+model Seat {
+  id           String        @id @default(cuid())
+  hall         Hall          @relation(fields: [hallId], references: [id])
+  hallId       String
+  row          Int
+  col          Int
+  reservations Reservation[]
+
+  @@unique([hallId, row, col])
+}
+
+model Screening {
+  id           String        @id @default(cuid())
+  movie        Movie         @relation(fields: [movieId], references: [id])
+  movieId      String
+  hall         Hall          @relation(fields: [hallId], references: [id])
+  hallId       String
+  startsAt     DateTime
+  price        Int // w groszach
+  reservations Reservation[]
+}
+
+model Reservation {
+  id          String    @id @default(cuid())
+  user        User      @relation(fields: [userId], references: [id])
+  userId      String
+  screening   Screening @relation(fields: [screeningId], references: [id])
+  screeningId String
+  seat        Seat      @relation(fields: [seatId], references: [id])
+  seatId      String
+  createdAt   DateTime  @default(now())
+
+  // KLUCZOWE: to samo miejsce nie może być zarezerwowane dwa razy na tym samym seansie.
+  // Ta reguła na poziomie bazy eliminuje race condition.
+  @@unique([screeningId, seatId])
+}
