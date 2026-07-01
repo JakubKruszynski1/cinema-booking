@@ -9,6 +9,7 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import authRoutes from './modules/auth/auth.routes.js';
 import moviesRoutes from './modules/movies/movies.routes.js';
 import screeningsRoutes from './modules/screenings/screenings.routes.js';
+import reservationsRoutes from './modules/reservations/reservations.routes.js';
 
 const app = express();
 
@@ -46,7 +47,7 @@ app.get('/api/health', (_req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/movies', moviesRoutes);
 app.use('/api/screenings', screeningsRoutes);
-// reservations zostanie zamontowany w kolejnym kroku.
+app.use('/api/reservations', reservationsRoutes);
 
 // ---- Obsługa błędów (na końcu) ----
 app.use(notFoundHandler);
