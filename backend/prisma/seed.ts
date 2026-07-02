@@ -12,13 +12,15 @@ const prisma = new PrismaClient();
  */
 
 async function main() {
-  console.log('🌱 Seed: czyszczenie istniejących danych...');
-  // Kolejność ważna ze względu na klucze obce.
-  await prisma.reservation.deleteMany();
-  await prisma.screening.deleteMany();
-  await prisma.seat.deleteMany();
-  await prisma.hall.deleteMany();
-  await prisma.movie.deleteMany();
+  // Idempotencja: jeśli baza jest już wypełniona (np. restart kontenera),
+  // pomijamy seed, by nie skasować rezerwacji użytkowników.
+  const existingMovies = await prisma.movie.count();
+  if (existingMovies > 0) {
+    console.log('🌱 Seed: dane już istnieją — pomijam.');
+    return;
+  }
+
+  console.log('🌱 Seed: wypełnianie bazy danymi początkowymi...');
 
   // ---- Sale kinowe (z automatycznie generowanymi fotelami) ----
   const hallsSpec = [
