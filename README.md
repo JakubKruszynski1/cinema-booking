@@ -1,7 +1,7 @@
 # 🎬 Cinema Booking — aplikacja do rezerwacji miejsc w kinie
 
 Aplikacja webowa do przeglądania repertuaru i rezerwacji miejsc w kinie.
-Projekt magisterski (PWO). Pełny stack w TypeScript, uruchamiany jedną komendą
+Projekt zaliczeniowy (PWO). Pełny stack w TypeScript, uruchamiany jedną komendą
 przez Docker Compose.
 
 ![stack](https://img.shields.io/badge/stack-TypeScript%20end--to--end-blue)
