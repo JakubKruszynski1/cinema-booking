@@ -1,30 +1,43 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, ApiError } from '../api/client';
 import type { SeatMapResponse } from '../api/types';
 import { SeatMap } from '../components/SeatMap';
+import { Button } from '../components/ui/Button';
 import { Card, CardBody } from '../components/ui/Card';
 import { Spinner } from '../components/ui/Spinner';
 import { formatDateTime, formatPrice } from '../lib/format';
 
+const rowLabels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+function seatLabel(row: number, col: number): string {
+  return `${rowLabels[row - 1] ?? row}${col}`;
+}
+
 export function BookingPage() {
   const { screeningId } = useParams<{ screeningId: string }>();
+  const navigate = useNavigate();
 
   const [data, setData] = useState<SeatMapResponse | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const loadSeats = useCallback(async () => {
     if (!screeningId) return;
+    return api<SeatMapResponse>(`/api/screenings/${screeningId}/seats`).then(
+      setData
+    );
+  }, [screeningId]);
+
+  useEffect(() => {
     let active = true;
     setLoading(true);
     setError(null);
-
-    api<SeatMapResponse>(`/api/screenings/${screeningId}/seats`)
-      .then((res) => {
-        if (active) setData(res);
-      })
+    loadSeats()
       .catch((err) => {
         if (active) {
           setError(
@@ -35,13 +48,13 @@ export function BookingPage() {
       .finally(() => {
         if (active) setLoading(false);
       });
-
     return () => {
       active = false;
     };
-  }, [screeningId]);
+  }, [loadSeats]);
 
   function toggleSeat(seatId: string) {
+    setSubmitError(null);
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(seatId)) next.delete(seatId);
@@ -58,7 +71,50 @@ export function BookingPage() {
   }, [data, selected]);
 
   const total = data ? selectedSeats.length * data.screening.price : 0;
-  const rowLabels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+  async function handleReserve() {
+    if (!data || selectedSeats.length === 0) return;
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      await api('/api/reservations', {
+        method: 'POST',
+        body: JSON.stringify({
+          screeningId: data.screening.id,
+          seatIds: Array.from(selected),
+        }),
+      });
+      // Sukces — przejście do listy rezerwacji.
+      navigate('/my-reservations', { replace: true });
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        // Konflikt: ktoś zajął część miejsc. Pokaż które i odśwież mapę.
+        const conflicting =
+          (err.details as { conflictingSeatIds?: string[] } | undefined)
+            ?.conflictingSeatIds ?? [];
+        const labels = data.seats
+          .filter((s) => conflicting.includes(s.id))
+          .map((s) => seatLabel(s.row, s.col));
+        setSubmitError(
+          labels.length
+            ? `Miejsca zajęte przez kogoś innego: ${labels.join(', ')}. Wybierz inne.`
+            : err.message
+        );
+        await loadSeats().catch(() => undefined);
+        setSelected((prev) => {
+          const next = new Set(prev);
+          conflicting.forEach((id) => next.delete(id));
+          return next;
+        });
+      } else if (err instanceof ApiError) {
+        setSubmitError(err.message);
+      } else {
+        setSubmitError('Nie udało się utworzyć rezerwacji');
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -96,7 +152,6 @@ export function BookingPage() {
       </div>
 
       <div className="grid gap-8 lg:grid-cols-[1fr_280px]">
-        {/* Mapa sali */}
         <Card>
           <CardBody>
             <SeatMap
@@ -109,7 +164,6 @@ export function BookingPage() {
           </CardBody>
         </Card>
 
-        {/* Podsumowanie wyboru */}
         <div>
           <Card>
             <CardBody>
@@ -138,11 +192,21 @@ export function BookingPage() {
                 <span className="text-brand">{formatPrice(total)}</span>
               </div>
 
-              {/* Potwierdzenie rezerwacji (POST + obsługa konfliktu 409)
-                  zostanie dodane w kroku 9. */}
-              <p className="mt-4 text-xs text-slate-500">
-                Potwierdzenie rezerwacji pojawi się w kroku 9.
-              </p>
+              {submitError && (
+                <p className="mt-4 rounded-md bg-red-950/60 px-3 py-2 text-sm text-red-300">
+                  {submitError}
+                </p>
+              )}
+
+              <Button
+                className="mt-4 w-full"
+                disabled={selectedSeats.length === 0 || submitting}
+                onClick={handleReserve}
+              >
+                {submitting
+                  ? 'Rezerwuję…'
+                  : `Zarezerwuj (${selectedSeats.length})`}
+              </Button>
             </CardBody>
           </Card>
         </div>
