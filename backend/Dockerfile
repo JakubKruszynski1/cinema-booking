@@ -3,6 +3,11 @@ FROM node:20-alpine
 
 WORKDIR /app
 
+# Prisma na Alpine potrzebuje OpenSSL i libc6-compat — bez nich silnik zapytań
+# nie wykrywa wersji libssl ("Prisma failed to detect the libssl/openssl
+# version") i wpada w pętlę restartów. Instalujemy je przed prisma generate.
+RUN apk add --no-cache openssl libc6-compat
+
 # Instalacja zależności (osobna warstwa dla cache)
 COPY package*.json ./
 RUN npm install

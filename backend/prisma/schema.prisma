@@ -2,7 +2,11 @@
 // Dokumentacja: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // "native" — środowisko dev (Windows/host). Drugi target obejmuje obraz
+  // node:20-alpine w Dockerze (musl + OpenSSL 3.x), by silnik zapytań miał
+  // odpowiednią binarkę.
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
