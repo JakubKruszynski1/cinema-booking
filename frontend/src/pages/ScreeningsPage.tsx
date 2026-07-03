@@ -154,10 +154,21 @@ export function ScreeningsPage() {
                     />
                   )}
                   <CardBody>
-                    <h3 className="font-semibold text-white">{s.movie.title}</h3>
+                    <Link
+                      to={`/movies/${s.movie.id}`}
+                      className="font-semibold text-white hover:text-brand"
+                    >
+                      {s.movie.title}
+                    </Link>
                     <p className="mt-1 text-sm text-slate-400">
                       {s.hall.name} • {s.movie.durationMin} min
                     </p>
+                    <Link
+                      to={`/movies/${s.movie.id}`}
+                      className="mt-1 inline-block text-xs text-brand hover:underline"
+                    >
+                      Szczegóły i recenzje →
+                    </Link>
                     <div className="mt-3 flex items-center justify-between">
                       <div>
                         <span className="text-lg font-bold text-brand">

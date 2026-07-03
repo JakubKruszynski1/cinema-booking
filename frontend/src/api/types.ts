@@ -56,3 +56,17 @@ export interface Reservation {
     hall: { id: string; name: string };
   };
 }
+
+export interface Review {
+  id: string;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+  author: { id: string; email: string };
+}
+
+export interface MovieReviewsResponse {
+  average: number | null; // średnia ocen (null gdy brak recenzji)
+  count: number;
+  reviews: Review[];
+}

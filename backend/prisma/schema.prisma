@@ -20,6 +20,7 @@ model User {
   passwordHash String
   createdAt    DateTime      @default(now())
   reservations Reservation[]
+  reviews      Review[]
 }
 
 model Movie {
@@ -29,6 +30,7 @@ model Movie {
   durationMin Int
   posterUrl   String?
   screenings  Screening[]
+  reviews     Review[]
 }
 
 model Hall {
@@ -75,4 +77,19 @@ model Reservation {
   // KLUCZOWE: to samo miejsce nie może być zarezerwowane dwa razy na tym samym seansie.
   // Ta reguła na poziomie bazy eliminuje race condition.
   @@unique([screeningId, seatId])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  movie     Movie    @relation(fields: [movieId], references: [id])
+  movieId   String
+  rating    Int // ocena 1–5 (walidacja zakresu w warstwie Zod)
+  comment   String?
+  createdAt DateTime @default(now())
+
+  // Jeden użytkownik może wystawić tylko jedną recenzję na dany film.
+  // Ponowne wysłanie aktualizuje istniejącą (upsert po tej parze).
+  @@unique([userId, movieId])
 }

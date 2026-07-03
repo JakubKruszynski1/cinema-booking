@@ -10,6 +10,10 @@ import authRoutes from './modules/auth/auth.routes.js';
 import moviesRoutes from './modules/movies/movies.routes.js';
 import screeningsRoutes from './modules/screenings/screenings.routes.js';
 import reservationsRoutes from './modules/reservations/reservations.routes.js';
+import {
+  movieReviewsRouter,
+  reviewsRouter,
+} from './modules/reviews/reviews.routes.js';
 
 const app = express();
 
@@ -46,8 +50,10 @@ app.get('/api/health', (_req, res) => {
 // Moduły API.
 app.use('/api/auth', authRoutes);
 app.use('/api/movies', moviesRoutes);
+app.use('/api/movies/:movieId/reviews', movieReviewsRouter);
 app.use('/api/screenings', screeningsRoutes);
 app.use('/api/reservations', reservationsRoutes);
+app.use('/api/reviews', reviewsRouter);
 
 // ---- Obsługa błędów (na końcu) ----
 app.use(notFoundHandler);

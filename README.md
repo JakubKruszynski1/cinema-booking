@@ -17,6 +17,9 @@ przez Docker Compose.
   współbieżność (patrz niżej).
 - **Konto użytkownika** — rejestracja, logowanie (JWT), „Moje rezerwacje”
   z możliwością anulowania.
+- **Oceny i recenzje filmów** — zalogowany użytkownik wystawia ocenę 1–5
+  gwiazdek i opcjonalny komentarz (jedna recenzja na film, ponowne wysłanie ją
+  aktualizuje); na stronie filmu widać średnią ocenę i listę recenzji.
 - Responsywny, ciemny interfejs (Tailwind CSS).
 
 ---
@@ -95,15 +98,15 @@ cinema-booking/
 │   └── src/
 │       ├── config/          # walidacja env (Zod)
 │       ├── middleware/      # auth, errorHandler, rateLimit
-│       ├── modules/         # auth, movies, screenings, reservations
+│       ├── modules/         # auth, movies, screenings, reservations, reviews
 │       ├── lib/             # prisma, jwt, asyncHandler
 │       └── schemas/         # schematy Zod
 └── frontend/
     └── src/
         ├── api/             # klient fetch + typy
         ├── context/         # AuthContext
-        ├── components/      # SeatMap, Navbar, ui/*
-        └── pages/           # Login, Register, Screenings, Booking, MyReservations
+        ├── components/      # SeatMap, Navbar, ReviewsSection, Stars, ui/*
+        └── pages/           # Login, Register, Screenings, MovieDetail, Booking, MyReservations
 ```
 
 ---
@@ -122,6 +125,9 @@ cinema-booking/
 | POST | `/api/reservations` | ✓ | Rezerwacja miejsc (transakcja). |
 | GET | `/api/reservations/me` | ✓ | Rezerwacje zalogowanego użytkownika. |
 | DELETE | `/api/reservations/:id` | ✓ | Anulowanie własnej rezerwacji. |
+| GET | `/api/movies/:movieId/reviews` | ✗ | Recenzje filmu + średnia ocen i liczba. |
+| POST | `/api/movies/:movieId/reviews` | ✓ | Dodanie lub aktualizacja własnej recenzji (upsert). |
+| DELETE | `/api/reviews/:id` | ✓ | Usunięcie własnej recenzji. |
 
 ### Serce projektu — odporność na współbieżność
 
@@ -132,6 +138,15 @@ jednocześnie sięgnie po to samo miejsce, jeden dostaje błąd `P2002`, który
 mapujemy na **`409 Conflict`** z listą zajętych miejsc — frontend odświeża
 mapę i podpowiada wybór innych miejsc. To eliminuje race condition bez ręcznych
 blokad.
+
+### Oceny i recenzje
+
+Model `Review` z ograniczeniem `@@unique([userId, movieId])` gwarantuje jedną
+recenzję na parę użytkownik–film. `POST /api/movies/:movieId/reviews` wykonuje
+**upsert**, więc ponowne wysłanie aktualizuje istniejącą ocenę zamiast tworzyć
+duplikat. Usuwanie i edycja działają wyłącznie na własnych recenzjach —
+właściciela ustalamy po `userId` z tokenu (nie z parametru), tak samo jak przy
+rezerwacjach. Średnia ocen liczona jest po stronie bazy (`aggregate`).
 
 ---
 
